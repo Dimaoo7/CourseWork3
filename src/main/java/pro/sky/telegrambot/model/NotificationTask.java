@@ -1,41 +1,29 @@
 package pro.sky.telegrambot.model;
 
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import javax.persistence.*;
+import java.time.LocalDateTime;
 
+@Data
 @Entity
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class NotificationTask {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(name = "chat_id")
-    private long chatId;
-    private long dateTime;
+    @Column(name = "user_id")
+    private long userId;
+    private String text;
+    private LocalDateTime date;
 
-    public NotificationTask(long chatId, long dateTime) {
-        this.chatId = chatId;
-        this.dateTime = dateTime;
-    }
-
-    public NotificationTask() {
-
-    }
-
-    public long getChatId() {
-        return chatId;
-    }
-    public long getDateTime() {
-        return dateTime;
-    }
-    public void setChatId(long chatId) {
-        this.chatId = chatId;
-    }
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Long getId() {
-        return id;
+    public void setDate(LocalDateTime localDateTime) {
+        this.date = localDateTime;
     }
 }
