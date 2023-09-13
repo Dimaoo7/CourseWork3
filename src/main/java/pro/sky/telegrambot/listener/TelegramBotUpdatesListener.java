@@ -59,16 +59,15 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
             //if user sent /start
             if (update.message().text().equals("/start")) {
                 SendMessage message = new SendMessage(chatId, "Привет, " + name + "\uD83D\uDE1D \n" +
-                        "Пример напоминания для ввода: 01.01.2022 20:00 Сделать домашнюю работу ");
+                        "Пример напоминания для ввода: " + LocalDateTime.now().format(DateTimeFormatter
+                        .ofPattern("dd.MM.yyyy HH:mm")) + " Сделать домашнюю работу "); // print time now
                 SendAnimation sendAnimationRequest = new SendAnimation(chatId, gifUrl);
                 telegramBot.execute(message);
                 telegramBot.execute(sendAnimationRequest);
                 //if user sent date it will be saved
             } else if (matcher.matches()) {
-                saveDateAndTime(updates);
-                SendMessage message = new SendMessage(chatId, "This message was saved successfully" +
-                        " \uD83D\uDC4D\uD83D\uDE01");
-                telegramBot.execute(message);
+                NotificationTask notificationTask = saveDateAndTime(updates);
+                notificationTaskRepository.save(notificationTask);
             }else {
                 //Else send message
                 SendMessage message = new SendMessage(chatId, "Извините, я вас не понимаю" +
@@ -82,9 +81,10 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
     //method for saving date and time
     @Transactional
-    public void saveDateAndTime(List<Update> updates) {
+    public NotificationTask saveDateAndTime(List<Update> updates) {
+        NotificationTask notificationTask = new NotificationTask();
         updates.forEach(update -> {
-            NotificationTask notificationTask = new NotificationTask();
+
             Long chatId = update.message().chat().id();
             notificationTask.setUserId(chatId);
 
@@ -100,11 +100,14 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                     notificationTaskRepository.save(notificationTask);
                 } catch (DateTimeParseException e) {
                     // Если строка не может быть разобрана как дата, отправляем сообщение об ошибке пользователю
-                    SendMessage message = new SendMessage(chatId, "Введенная дата недействительна. Пожалуйста, введите дату в формате 'dd.MM.yyyy HH:mm'");
+                    SendMessage message = new SendMessage(chatId, "Введенная дата недействительна. Пожалуйста," +
+                            " введите дату в формате 'dd.MM.yyyy HH:mm'");
                     telegramBot.execute(message);
                 }
             }
         });
+        System.out.println(notificationTask);
+        return notificationTask;
     }
     //Schedule method
     @Scheduled(cron = "0 0/1 * * * *")
