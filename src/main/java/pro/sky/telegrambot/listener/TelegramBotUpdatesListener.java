@@ -3,7 +3,6 @@ package pro.sky.telegrambot.listener;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.model.Update;
-import com.pengrad.telegrambot.request.SendAnimation;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.SendResponse;
 import org.slf4j.Logger;
@@ -46,11 +45,13 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
             logger.info("Processing update: {}", update);
             long chatId = update.message().chat().id();
             var name = update.message().chat().firstName();
-            var gifUrl = "https://i.gifer.com/72vU.gif";
             Pattern pattern = Pattern.compile("([0-9.:\\s]{16})(\\s)([\\W+]+)");
+            Pattern pattern1 = Pattern.compile("/(5|10|15|30)min$"); // only 5 10 15 30 тут что то
             Matcher matcher;
+            Matcher matcher1;
             if (update.message().text() != null) {
                 matcher = pattern.matcher(update.message().text());
+                matcher1 = pattern1.matcher(update.message().text());
             } else {
                 System.out.println("Что пошло не так");
                 return;
@@ -61,14 +62,18 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 SendMessage message = new SendMessage(chatId, "Привет, " + name + "\uD83D\uDE1D \n" +
                         "Пример напоминания для ввода: " + LocalDateTime.now().format(DateTimeFormatter
                         .ofPattern("dd.MM.yyyy HH:mm")) + " Сделать домашнюю работу "); // print time now
-                SendAnimation sendAnimationRequest = new SendAnimation(chatId, gifUrl);
                 telegramBot.execute(message);
-                telegramBot.execute(sendAnimationRequest);
+
                 //if user sent date it will be saved
             } else if (matcher.matches()) {
                 NotificationTask notificationTask = saveDateAndTime(updates);
                 notificationTaskRepository.save(notificationTask);
-            }else {
+
+            } else if (matcher1.matches()) {//  three buttons set timer to /5min /10min /15min /30min
+                NotificationTask notificationTask = saveTimer(updates, matcher1);
+                notificationTaskRepository.save(notificationTask);
+
+            } else {
                 //Else send message
                 SendMessage message = new SendMessage(chatId, "Извините, я вас не понимаю" +
                         " \uD83D\uDE21");
@@ -77,6 +82,27 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
             }
         });
         return UpdatesListener.CONFIRMED_UPDATES_ALL;
+    }
+
+    @Transactional
+    public NotificationTask saveTimer(List<Update> updates, Matcher matcher1) {
+        NotificationTask notificationTask = new NotificationTask();
+        updates.forEach(update -> {
+            Long chatId = update.message().chat().id();
+            notificationTask.setUserId(chatId);
+            notificationTask.setDate(LocalDateTime
+                    .now()
+                    .plusMinutes(Integer
+                            .parseInt(matcher1
+                                    .group(1)))
+                    .truncatedTo(ChronoUnit.MINUTES)); //localDateTime now + matcher
+            String text = matcher1.group(1);
+            notificationTask.setText(text + " Минут прошло");
+            notificationTaskRepository.save(notificationTask);
+    }
+        );
+        System.out.println(notificationTask);
+        return notificationTask;
     }
 
     //method for saving date and time
