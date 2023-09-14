@@ -51,4 +51,16 @@ class TelegramBotUpdatesListenerTest {
 
         assertNotNull(notificationTask);
     }
+
+    @Test
+    void saveTimer(){
+        NotificationTask notificationTask = NotificationTask.builder()
+                .date(LocalDateTime.now())
+                .text("test")
+                .build();
+        notificationTaskRepository.save(notificationTask);
+        System.out.println(notificationTask);
+
+        assertNotNull(notificationTask);
+    }
 }

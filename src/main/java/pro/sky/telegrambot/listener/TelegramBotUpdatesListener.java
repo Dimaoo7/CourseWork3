@@ -47,6 +47,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
             var name = update.message().chat().firstName();
             Pattern pattern = Pattern.compile("([0-9.:\\s]{16})(\\s)([\\W+]+)");
             Pattern pattern1 = Pattern.compile("/(5|10|15|30)min$"); // only 5 10 15 30 тут что то
+            String smile = "\uD83D\uDC4D";
             Matcher matcher;
             Matcher matcher1;
             if (update.message().text() != null) {
@@ -68,10 +69,15 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
             } else if (matcher.matches()) {
                 NotificationTask notificationTask = saveDateAndTime(updates);
                 notificationTaskRepository.save(notificationTask);
+                SendMessage message = new SendMessage(chatId, " Будильник сработает "
+                        + matcher.group(1) + " " + matcher.group(2) + smile);
+                telegramBot.execute(message);
 
             } else if (matcher1.matches()) {//  three buttons set timer to /5min /10min /15min /30min
                 NotificationTask notificationTask = saveTimer(updates, matcher1);
                 notificationTaskRepository.save(notificationTask);
+                SendMessage message = new SendMessage(chatId, "Будильник успешно поставлен" + smile);
+                telegramBot.execute(message);
 
             } else {
                 //Else send message
