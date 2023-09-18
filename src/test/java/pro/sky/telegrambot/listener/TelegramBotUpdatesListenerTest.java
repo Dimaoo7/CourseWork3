@@ -11,8 +11,9 @@ import pro.sky.telegrambot.model.NotificationTask;
 import pro.sky.telegrambot.repository.NotificationTaskRepository;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 
@@ -26,41 +27,59 @@ class TelegramBotUpdatesListenerTest {
     private NotificationTaskRepository notificationTaskRepository;
 
     @Test
-    void processTest() {
-        SendMessage sendMessage = new SendMessage( 1L, "test");
-        telegramBot.execute(sendMessage);
+    void sendMessageTest() {
+        NotificationTask notificationTask = NotificationTask.builder()
+                .id(1L)
+                .userId(2L)
+                .text("test")
+                .date(LocalDateTime.now())
+                .build();
+        SendMessage message = new SendMessage(notificationTask.getUserId(), notificationTask.getText());
+        telegramBot.execute(message);
         verify(telegramBot, new Times(1)).execute(any(SendMessage.class));
     }
 
     @Test
-    void saveDateAndTimeTest() {
-        NotificationTask notificationTask = new NotificationTask();
-        notificationTaskRepository.save(notificationTask);
+    void sendMessageFalseTest() {
+        NotificationTask notificationTask = NotificationTask.builder()
+                .userId(1L)
+                .date(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES))
+                .text(null)
+                .build();
 
-        assertNotNull(notificationTask);
+        SendMessage message = new SendMessage(notificationTask.getUserId(), notificationTask.getText());
+        telegramBot.execute(message);
+
+        verify(notificationTaskRepository, new Times(0)).save(any(NotificationTask.class));
     }
 
     @Test
-    void sendMessageTest() {
+    void saveTimer() {
         NotificationTask notificationTask = NotificationTask.builder()
-                .date(LocalDateTime.now())
-                .text("test")
+                .userId(1L)
+                .date(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES))
+                .text("/5min")
                 .build();
+
+        SendMessage message = new SendMessage(notificationTask.getUserId(), notificationTask.getText());
+        telegramBot.execute(message);
         notificationTaskRepository.save(notificationTask);
-        System.out.println(notificationTask);
 
-        assertNotNull(notificationTask);
+        verify(notificationTaskRepository, new Times(1)).save(any(NotificationTask.class));
+
     }
-
     @Test
-    void saveTimer(){
+    void saveTimerFalse() {
         NotificationTask notificationTask = NotificationTask.builder()
-                .date(LocalDateTime.now())
-                .text("test")
+                .userId(1L)
+                .date(LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES))
+                .text("/null")
                 .build();
-        notificationTaskRepository.save(notificationTask);
-        System.out.println(notificationTask);
 
-        assertNotNull(notificationTask);
+        SendMessage message = new SendMessage(notificationTask.getUserId(), notificationTask.getText());
+        telegramBot.execute(message);
+        notificationTaskRepository.save(notificationTask);
+        assertFalse(notificationTaskRepository.findById(notificationTask.getId()).isPresent());
     }
+
 }
